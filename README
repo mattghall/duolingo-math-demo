@@ -16,18 +16,15 @@ This project is a prototype math assistant inspired by the Advanced Math Team at
 - AI generates a relevant math problem based on the input
 - Designed for rapid prototyping and extensibility
 
-## Getting Started
+## Tech Stack
+- Python (backend logic)
+- Streamlit (for the web UI)
+- OpenRouter (for LLM API access)
+- KaTeX (for math rendering in Streamlit)
 
-1. **Clone the repository:**
-	```sh
-	git clone <repo-url>
-	cd duolingo-math-demo
-	```
-2. **Install dependencies:**
-	```sh
-	pip install -r requirements.txt
-	```
-3. **Run the app:**
-	```sh
-	# (Instructions for running the app will be added after implementation)
-	```
+## Notes
+- All equations and math expressions are formatted in LaTeX for best rendering in Streamlit.
+- The app is designed for demo and prototyping purposes.
+
+---
+Inspired by the Duolingo Advanced Math Team
