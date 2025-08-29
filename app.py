@@ -3,6 +3,8 @@ import os
 import requests
 from dotenv import load_dotenv
 import re
+import time
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,7 +14,9 @@ st.set_page_config(page_title="Matt's Duolingo Math Assistant Demo", page_icon="
 st.title("Matt's Duolingo Math Assistant Demo")
 
 st.write("""
-Enter a premise (e.g., a name, topic, or idea) and select a math category. The AI will generate a creative math problem for you!
+Enter a premise (e.g., a name, topic, or idea) and select a math category. 
+         
+The AI will generate a creative math problem for you!
 """)
 
 # Add a session state variable to track if a problem is being generated
@@ -20,8 +24,12 @@ if 'generating' not in st.session_state:
     st.session_state['generating'] = False
 if 'show_solution' not in st.session_state:
     st.session_state['show_solution'] = False
+if 'problem_text' not in st.session_state:
+    st.session_state['problem_text'] = None
+if 'solution_text' not in st.session_state:
+    st.session_state['solution_text'] = None
 
-premise = st.text_input("Premise", "Taylor Swift")
+premise = st.text_input("Premise", "Senior Software engineer and Duolingo job candidate Matt Hall")
 category = st.selectbox("Category", ["Algebra", "Geometry", "Logarithms", "Sequences"])
 age_category = st.selectbox("Age Category", ["Elementary", "Middle School", "High School", "College"])
 
@@ -41,38 +49,43 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Track previous prompt values to enable/disable generate button
-if 'prev_premise' not in st.session_state:
-    st.session_state['prev_premise'] = premise
-if 'prev_category' not in st.session_state:
-    st.session_state['prev_category'] = category
-if 'prev_age_category' not in st.session_state:
-    st.session_state['prev_age_category'] = age_category
 
-# Enable generate button only if prompts have changed or not generating
-prompts_changed = (
-    premise != st.session_state['prev_premise'] or
-    category != st.session_state['prev_category'] or
-    age_category != st.session_state['prev_age_category']
-)
+if 'request_times' not in st.session_state:
+    st.session_state['request_times'] = []
 
-can_generate = (not st.session_state['generating']) and prompts_changed
+request_times = st.session_state['request_times']
+
+now = time.time()
+# Remove requests older than 60 seconds
+request_times = [t for t in request_times if now - t < 60]
+st.session_state['request_times'] = request_times
+
+MAX_REQUESTS = 1
+COOLDOWN = 60  # seconds
+
+
+# Determine if the button should be enabled
+can_generate = not st.session_state['generating']
+
 
 generate_btn = st.button("Generate Math Problem", key="generate_btn", disabled=not can_generate)
 
-problem_text = None
-solution_text = None
-
-# Immediately set generating state if button is pressed
+# Immediately set generating state and check rate limit if button is pressed
 if generate_btn and not st.session_state['generating']:
-    st.session_state['generating'] = True
-    st.session_state['prev_premise'] = premise
-    st.session_state['prev_category'] = category
-    st.session_state['prev_age_category'] = age_category
-    st.rerun()
+    if len(request_times) < MAX_REQUESTS:
+        st.session_state['generating'] = True
+        st.session_state['prev_premise'] = premise
+        st.session_state['prev_category'] = category
+        st.session_state['prev_age_category'] = age_category
+        request_times.append(time.time())
+        st.session_state['request_times'] = request_times
+        st.rerun()
+    else:
+        st.session_state['cooldown'] = True
+        cooldown_remaining = int(COOLDOWN - (now - request_times[0]))
+        st.session_state['cooldown_message'] = f"Rate limit reached: Please wait {cooldown_remaining} seconds before generating another problem."
 
 if st.session_state['generating']:
-    st.session_state['show_solution'] = False
     with st.spinner('Generating problem...'):
         if not OPENROUTER_API_KEY:
             st.error("OpenRouter API key not set. Please set the OPENROUTER_API_KEY environment variable or .env file.")
@@ -106,13 +119,14 @@ if st.session_state['generating']:
                     # Extract problem and solution using regex
                     match = re.search(r"Problem:(.*?)(?:Solution:|$)(.*)", content, re.DOTALL)
                     if match:
-                        problem_text = match.group(1).strip()
-                        solution_text = match.group(2).strip()
+                        st.session_state['problem_text'] = match.group(1).strip()
+                        st.session_state['solution_text'] = match.group(2).strip()
                     else:
-                        problem_text = content
-                        solution_text = None
-                    st.session_state['problem_text'] = problem_text
-                    st.session_state['solution_text'] = solution_text
+                        st.session_state['problem_text'] = content
+                        st.session_state['solution_text'] = None
+                    st.session_state['show_solution'] = False
+                    if 'cooldown' in st.session_state:
+                        del st.session_state['cooldown']
                 else:
                     st.error(f"Error from OpenRouter: {response.status_code} - {response.text}")
             except Exception as e:
@@ -120,17 +134,27 @@ if st.session_state['generating']:
     st.session_state['generating'] = False
     st.rerun()
 
+if st.session_state.get('cooldown_message'):
+    st.warning(st.session_state['cooldown_message'])
+    # Optionally clear the message after display so it doesn't persist
+    del st.session_state['cooldown_message']
+
 # Display the problem if available
 if 'problem_text' in st.session_state and st.session_state['problem_text']:
-    st.markdown(f"**Problem:**\n\n")
-    st.markdown(st.session_state['problem_text'])
+    # Fix: Render as markdown but patch broken $...$ that wrap non-math (e.g., numbers with text)
+    import re
+    def fix_broken_latex(text):
+        # Replace $<number> <words>$ with just the number and words (no $)
+        return re.sub(r'\$(\d+[,.\d]* [A-Za-z][^$]*)\$', r'\1', text)
+    clean_problem = fix_broken_latex(st.session_state['problem_text'])
+    st.markdown(f"**Problem:**\n\n{clean_problem}")
     if st.session_state.get('solution_text'):
         if st.session_state['show_solution']:
             if st.button("Hide Solution"):
                 st.session_state['show_solution'] = False
                 st.rerun()
-            st.markdown(f"**Solution:**\n\n")
-            st.markdown(st.session_state['solution_text'])
+            clean_solution = fix_broken_latex(st.session_state['solution_text'])
+            st.markdown(f"**Solution:**\n\n{clean_solution}")
         else:
             if st.button("See Solution"):
                 st.session_state['show_solution'] = True
