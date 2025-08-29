@@ -1,0 +1,33 @@
+# Duolingo Math Assistant Demo
+
+This project is a prototype math assistant inspired by the Advanced Math Team at Duolingo. It leverages AI to generate engaging, context-rich math problems from user-provided premises and selected categories.
+
+## Project Overview
+
+- **Goal:** Turn any premise (e.g., "Taylor Swift") and a math category (Algebra, Geometry, Logarithms, Sequences) into a creative, high-quality math problem.
+- **Example:**
+  - **Premise:** Taylor Swift
+  - **Category:** Geometry
+  - **Generated Problem:** "Taylor Swift is performing in a circular arena. If the arena has a radius of 50 meters, what is the maximum number of fans that can attend if each fan needs 1 square meter of space?"
+
+## Features
+- User inputs a premise (any topic, name, or idea)
+- User selects a math category from a dropdown (Algebra, Geometry, Logarithms, Sequences)
+- AI generates a relevant math problem based on the input
+- Designed for rapid prototyping and extensibility
+
+## Getting Started
+
+1. **Clone the repository:**
+	```sh
+	git clone <repo-url>
+	cd duolingo-math-demo
+	```
+2. **Install dependencies:**
+	```sh
+	pip install -r requirements.txt
+	```
+3. **Run the app:**
+	```sh
+	# (Instructions for running the app will be added after implementation)
+	```
