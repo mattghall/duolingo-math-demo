@@ -69,24 +69,30 @@ generate_btn = st.button("Generate Math Problem", key="generate_btn", disabled=n
 
 # Immediately set generating state and check rate limit if button is pressed
 if generate_btn and not st.session_state['generating']:
+    print(f"Button clicked")
     if len(request_times) < MAX_REQUESTS:
+        print('triggering generate...')
         st.session_state['generating'] = True
-        st.session_state['prev_premise'] = premise
-        st.session_state['prev_category'] = category
-        st.session_state['prev_age_category'] = age_category
         request_times.append(time.time())
         st.session_state['request_times'] = request_times
         st.rerun()
     else:
+        print('cooldown...')
         st.session_state['cooldown'] = True
         cooldown_remaining = int(COOLDOWN - (now - request_times[0]))
         st.session_state['cooldown_message'] = f"Rate limit reached: Please wait {cooldown_remaining} seconds before generating another problem."
 
 if st.session_state['generating']:
+    print('generating...')
     with st.spinner('Generating problem...'):
+        print('in spinner block')
         if not OPENROUTER_API_KEY:
-            st.error("OpenRouter API key not set. Please set the OPENROUTER_API_KEY environment variable or .env file.")
+            print("OpenRouter API key not set.")
+            st.error("OpenRouter API key not set. Please set the OPENROUTER_API_KEY environment variable")
+            st.session_state['generating'] = False
+            st.exit()
         else:
+            print(f"Generating problem with inputs: premise='{premise}', category='{category}', age_category='{age_category}'")
             prompt = (
                 f"Generate a creative, high-quality {category} math problem for a {age_category} student based on the following premise: '{premise}'. "
                 "The problem should be engaging and context-rich, suitable for a learner. "
@@ -126,10 +132,13 @@ if st.session_state['generating']:
                         del st.session_state['cooldown']
                 else:
                     st.error(f"Error from OpenRouter: {response.status_code} - {response.text}")
+                    st.session_state['generating'] = False
             except Exception as e:
                 st.error(f"Error generating problem: {e}")
-    st.session_state['generating'] = False
-    st.rerun()
+                st.session_state['generating'] = False
+        if st.session_state['generating']:
+            st.session_state['generating'] = False
+        st.rerun()
 
 if st.session_state.get('cooldown_message'):
     st.warning(st.session_state['cooldown_message'])
