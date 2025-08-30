@@ -1,13 +1,10 @@
 import streamlit as st
 import os
 import requests
-from dotenv import load_dotenv
 import re
 import time
-import json
 
-# Load environment variables from .env file
-load_dotenv()
+# Environment variables are loaded automatically by App Runner
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
 st.set_page_config(page_title="Matt's Duolingo Math Assistant Demo", page_icon="🧮")
