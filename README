@@ -22,6 +22,37 @@ This project is a prototype math assistant inspired by the Advanced Math Team at
 - OpenRouter (for LLM API access)
 - KaTeX (for math rendering in Streamlit)
 
+## Running Locally
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/mattghall/duolingo-math-demo.git
+   cd duolingo-math-demo
+   ```
+
+2. **Install dependencies:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+3. **Set up environment variables:**
+   - Create a `.env` file in the project root with your API keys:
+     ```
+     OPENROUTER_API_KEY=your-openrouter-api-key
+     ```
+   - Or, export the variable in your shell:
+     ```sh
+     export OPENROUTER_API_KEY=your-openrouter-api-key
+     ```
+
+4. **Run the app:**
+   ```sh
+   streamlit run app.py
+   ```
+
+5. **Access the app:**
+   - Open your browser and go to [http://localhost:8501](http://localhost:8501)
+
 ## Notes
 - All equations and math expressions are formatted in LaTeX for best rendering in Streamlit.
 - The app is designed for demo and prototyping purposes.
